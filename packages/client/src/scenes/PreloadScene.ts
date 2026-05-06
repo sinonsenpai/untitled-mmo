@@ -118,5 +118,19 @@ export class PreloadScene extends Phaser.Scene {
     chestGraphics.fillRect(14, 12, 4, 4);
     chestGraphics.generateTexture('bank_chest', 32, 28);
     chestGraphics.destroy();
+
+    // Campfire
+    const fireGraphics = this.make.graphics({ x: 0, y: 0 });
+    fireGraphics.fillStyle(0x78350f, 1);
+    fireGraphics.fillRect(10, 18, 4, 8);
+    fireGraphics.fillRect(18, 18, 4, 8);
+    fireGraphics.fillStyle(0xf97316, 1);
+    fireGraphics.fillCircle(16, 16, 8);
+    fireGraphics.fillStyle(0xfbbf24, 1);
+    fireGraphics.fillCircle(16, 14, 5);
+    fireGraphics.fillStyle(0xfef08a, 1);
+    fireGraphics.fillCircle(16, 12, 3);
+    fireGraphics.generateTexture('campfire', 32, 28);
+    fireGraphics.destroy();
   }
 }

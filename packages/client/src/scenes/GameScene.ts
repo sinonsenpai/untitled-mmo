@@ -11,6 +11,7 @@ import { gatheringManager } from '../managers/GatheringManager.js';
 import { craftingManager } from '../managers/CraftingManager.js';
 import { bankManager } from '../managers/BankManager.js';
 import { shopManager } from '../managers/ShopManager.js';
+import { firemakingManager } from '../managers/FiremakingManager.js';
 import { gameNotifications } from '../ui/GameNotifications.js';
 import { MAP_WIDTH, MAP_HEIGHT } from '@rpg/shared';
 
@@ -104,6 +105,7 @@ export class GameScene extends Phaser.Scene {
   private gatherTargetIndicator!: Phaser.GameObjects.Container;
   private npcs: NPC[] = [];
   private activeDialogue: HTMLDivElement | null = null;
+  private activeFires: { tileX: number; tileY: number; sprite: Phaser.GameObjects.Image; timer: Phaser.Time.TimerEvent }[] = [];
 
   constructor() {
     super({ key: 'GameScene' });
@@ -250,6 +252,12 @@ export class GameScene extends Phaser.Scene {
         gameNotifications.show(last.text);
       }
     });
+
+    // Spawn fire visual when firemaking completes
+    gameState.on('fireLit', (data: unknown) => {
+      const { tileX, tileY } = data as { tileX: number; tileY: number };
+      this.spawnFire(tileX, tileY);
+    });
   }
 
   update(time: number, delta: number) {
@@ -265,6 +273,11 @@ export class GameScene extends Phaser.Scene {
       this.progressBar.setVisible(true);
       this.progressBar.setPosition(this.player.x, this.player.y - 50);
       const progress = craftingManager.getProgress();
+      this.progressFill.setScale(progress, 1);
+    } else if (firemakingManager.isCurrentlyFiremaking()) {
+      this.progressBar.setVisible(true);
+      this.progressBar.setPosition(this.player.x, this.player.y - 50);
+      const progress = firemakingManager.getProgress();
       this.progressFill.setScale(progress, 1);
     } else {
       this.progressBar.setVisible(false);
@@ -527,5 +540,48 @@ export class GameScene extends Phaser.Scene {
       this.activeDialogue.remove();
       this.activeDialogue = null;
     }
+  }
+
+  spawnFire(tileX: number, tileY: number) {
+    const iso = cartesianToIsometric(tileX, tileY);
+    const sprite = this.add.image(iso.x, iso.y - 14, 'campfire');
+    sprite.setDepth(getDepth(tileX, tileY, 1000));
+    sprite.setOrigin(0.5, 1);
+    sprite.setAlpha(0.9);
+
+    // Flicker tween
+    this.tweens.add({
+      targets: sprite,
+      alpha: 0.6,
+      duration: 200 + Math.random() * 300,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    this.tweens.add({
+      targets: sprite,
+      scaleX: 1.1,
+      scaleY: 1.1,
+      duration: 300 + Math.random() * 400,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // Auto-extinguish after 30 seconds
+    const timer = this.time.delayedCall(30000, () => {
+      this.tweens.add({
+        targets: sprite,
+        alpha: 0,
+        duration: 500,
+        onComplete: () => {
+          sprite.destroy();
+          this.activeFires = this.activeFires.filter((f) => f.sprite !== sprite);
+        },
+      });
+    });
+
+    this.activeFires.push({ tileX, tileY, sprite, timer });
   }
 }
