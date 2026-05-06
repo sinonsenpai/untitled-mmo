@@ -253,6 +253,11 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
+    // Transient toasts — not persisted in chat
+    gameState.on('systemToast', (message: unknown) => {
+      gameNotifications.show(message as string, 2000);
+    });
+
     // Spawn fire visual when firemaking completes
     gameState.on('fireLit', (data: unknown) => {
       const { tileX, tileY } = data as { tileX: number; tileY: number };

@@ -75,11 +75,25 @@ export class ChatPanel extends UIPanel {
   }
 
   private renderMessages(messages: { sender: string; text: string }[]) {
-    const recent = messages.slice(-50);
+    const grouped: { sender: string; text: string; count: number }[] = [];
+    for (const msg of messages) {
+      const last = grouped[grouped.length - 1];
+      if (last && last.sender === msg.sender && last.text === msg.text) {
+        last.count++;
+      } else {
+        grouped.push({ sender: msg.sender, text: msg.text, count: 1 });
+      }
+    }
+
+    const recent = grouped.slice(-50);
     this.messagesDiv.innerHTML = recent
       .map(
         (m) =>
-          `<div style="font-size:11px;line-height:1.4;margin-bottom:2px;word-break:break-word;"><span style="color:#8af;font-weight:bold;">${m.sender}:</span> <span style="color:#ddd;">${m.text}</span></div>`
+          `<div style="font-size:11px;line-height:1.4;margin-bottom:2px;word-break:break-word;">
+                    <span style="color:#8af;font-weight:bold;">${m.sender}:</span>
+                    <span style="color:#ddd;">${m.text}</span>
+                    ${m.count > 1 ? `<span style="color:#888;font-size:10px;margin-left:4px;">(x${m.count})</span>` : ''}
+                </div>`
       )
       .join('');
     this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;

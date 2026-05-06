@@ -125,10 +125,7 @@ export class GatheringManager {
         gameState['emit']('objects', Array.from(this.objects.values()));
       }, 15000);
     } else {
-      gameState.addChatMessage(
-        'System',
-        `You swing your ${objType === 'tree' ? 'axe' : 'pickaxe'} at the ${objType}... but get nothing.`
-      );
+      gameState['emit']('systemToast', `You swing your ${objType === 'tree' ? 'axe' : 'pickaxe'} at the ${objType}... but get nothing.`);
     }
 
     this.isGathering = false;
