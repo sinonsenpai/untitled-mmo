@@ -199,7 +199,10 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-F5', () => uiManager.togglePanel('chat'));
     this.input.keyboard?.on('keydown-F6', () => uiManager.togglePanel('crafting'));
     this.input.keyboard?.on('keydown-ENTER', () => uiManager.showPanel('chat'));
-    this.input.keyboard?.on('keydown-B', () => uiManager.togglePanel('bank'));
+    this.input.keyboard?.on('keydown-B', () => {
+      gameState['emit']('bank', gameState.getState().player.bank);
+      uiManager.togglePanel('bank');
+    });
 
     // NPC click handling
     this.npcs.forEach((npc) => {

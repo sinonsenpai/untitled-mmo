@@ -18,6 +18,8 @@ export class ShopManager {
 
   openShop(shopId: string): void {
     this.currentShopId = shopId;
+    const shop = this.shops.get(shopId);
+    gameState['emit']('shop', shop?.items || []);
   }
 
   closeShop(): void {
