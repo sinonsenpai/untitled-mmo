@@ -8,6 +8,7 @@ import { skillManager } from '../managers/SkillManager.js';
 import { questManager } from '../managers/QuestManager.js';
 import { uiManager } from '../managers/UIManager.js';
 import { gatheringManager } from '../managers/GatheringManager.js';
+import { craftingManager } from '../managers/CraftingManager.js';
 import { MAP_WIDTH, MAP_HEIGHT } from '@rpg/shared';
 
 // Simple 20x20 map data (0=grass, 1=dirt, 2=water)
@@ -66,6 +67,9 @@ const OBJECTS = [
   { type: 'rock', x: 12, y: 6 },
   // House
   { type: 'house', x: 10, y: 10 },
+  // Crafting stations
+  { type: 'anvil', x: 8, y: 8 },
+  { type: 'fletching_table', x: 12, y: 8 },
 ];
 
 const TILE_TEXTURES: Record<number, string> = {
@@ -168,6 +172,7 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-F3', () => uiManager.togglePanel('skills'));
     this.input.keyboard?.on('keydown-F4', () => uiManager.togglePanel('quests'));
     this.input.keyboard?.on('keydown-F5', () => uiManager.togglePanel('chat'));
+    this.input.keyboard?.on('keydown-F6', () => uiManager.togglePanel('crafting'));
     this.input.keyboard?.on('keydown-ENTER', () => uiManager.showPanel('chat'));
 
     // Starter items
@@ -175,10 +180,17 @@ export class GameScene extends Phaser.Scene {
     inventoryManager.addItem('bronze_dagger', 1);
     inventoryManager.addItem('wooden_shield', 1);
 
+    // Phase 1 starter materials
+    inventoryManager.addItem('copper_ore', 10);
+    inventoryManager.addItem('tin_ore', 10);
+    inventoryManager.addItem('logs', 10);
+    inventoryManager.addItem('feather', 50);
+    inventoryManager.addItem('bowstring', 10);
+
     // Start tutorial quest
     questManager.startQuest('tutorial');
 
-    gameState.addChatMessage('System', 'Welcome! Click trees/rocks to gather, or ground to move. F1-F5 for panels.');
+    gameState.addChatMessage('System', 'Welcome! Click trees/rocks to gather, or ground to move. F1-F5 for panels, F6 for crafting.');
   }
 
   update(time: number, delta: number) {
@@ -196,7 +208,12 @@ export class GameScene extends Phaser.Scene {
         }
       }
       const progress = gatheringManager.getProgress();
-      this.progressFill.width = 48 * progress;
+      this.progressFill.setScale(progress, 1);
+    } else if (craftingManager.isCurrentlyCrafting()) {
+      this.progressBar.setVisible(true);
+      this.progressBar.setPosition(this.player.x, this.player.y - 50);
+      const progress = craftingManager.getProgress();
+      this.progressFill.setScale(progress, 1);
     } else {
       this.progressBar.setVisible(false);
     }
@@ -278,6 +295,37 @@ export class GameScene extends Phaser.Scene {
         });
         
         this.gatherableSprites.push(sprite);
+      } else if (obj.type === 'anvil' || obj.type === 'fletching_table') {
+        // Crafting station
+        const sprite = this.add.image(iso.x, iso.y - 16, obj.type);
+        sprite.setDepth(getDepth(obj.x, obj.y, 1000));
+        sprite.setOrigin(0.5, 1);
+
+        sprite.setInteractive();
+
+        sprite.on('pointerover', () => {
+          this.input.setDefaultCursor('pointer');
+          sprite.setTint(0xcccccc);
+        });
+
+        sprite.on('pointerout', () => {
+          this.input.setDefaultCursor('default');
+          sprite.clearTint();
+        });
+
+        sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+          if (pointer.button !== 0) return;
+
+          this.player.moveToTile(obj.x, obj.y);
+          gameState.setPlayerPosition(obj.x, obj.y);
+
+          this.showTargetIndicator(obj.x, obj.y);
+
+          this.time.delayedCall(600, () => {
+            const skillType = obj.type === 'anvil' ? 'smithing' : 'fletching';
+            craftingManager.openCrafting(skillType);
+          });
+        });
       } else {
         // Non-gatherable (house)
         const sprite = this.add.image(iso.x, iso.y - 16, obj.type);
@@ -289,14 +337,14 @@ export class GameScene extends Phaser.Scene {
 
   private createProgressBar() {
     this.progressBar = this.add.container(0, 0);
-    this.progressBar.setDepth(1000);
+    this.progressBar.setDepth(3000);
     this.progressBar.setVisible(false);
 
     this.progressBg = this.add.rectangle(0, 0, 50, 8, 0x000000, 0.8);
     this.progressBg.setStrokeStyle(1, 0xffffff, 0.5);
     this.progressBar.add(this.progressBg);
 
-    this.progressFill = this.add.rectangle(-24, 0, 0, 6, 0x4ade80, 1);
+    this.progressFill = this.add.rectangle(-24, 0, 48, 6, 0x4ade80, 1);
     this.progressFill.setOrigin(0, 0.5);
     this.progressBar.add(this.progressFill);
   }

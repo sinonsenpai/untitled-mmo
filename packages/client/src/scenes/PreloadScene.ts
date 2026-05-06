@@ -83,5 +83,29 @@ export class PreloadScene extends Phaser.Scene {
     houseGraphics.fillRect(18, 28, 12, 12);
     houseGraphics.generateTexture('house', 48, 40);
     houseGraphics.destroy();
+
+    // Anvil
+    const anvilGraphics = this.make.graphics({ x: 0, y: 0 });
+    anvilGraphics.fillStyle(0x4b5563, 1);
+    anvilGraphics.fillRect(12, 24, 8, 16);
+    anvilGraphics.fillStyle(0x9ca3af, 1);
+    anvilGraphics.fillRect(4, 16, 24, 10);
+    anvilGraphics.fillStyle(0xd1d5db, 1);
+    anvilGraphics.fillRect(6, 18, 20, 4);
+    anvilGraphics.generateTexture('anvil', 32, 40);
+    anvilGraphics.destroy();
+
+    // Fletching table
+    const fletchingGraphics = this.make.graphics({ x: 0, y: 0 });
+    fletchingGraphics.fillStyle(0x78350f, 1);
+    fletchingGraphics.fillRect(8, 24, 4, 16);
+    fletchingGraphics.fillRect(20, 24, 4, 16);
+    fletchingGraphics.fillStyle(0x92400e, 1);
+    fletchingGraphics.fillRect(4, 20, 28, 8);
+    fletchingGraphics.fillStyle(0xa16207, 1);
+    fletchingGraphics.fillRect(8, 18, 4, 4);
+    fletchingGraphics.fillRect(20, 18, 4, 4);
+    fletchingGraphics.generateTexture('fletching_table', 32, 40);
+    fletchingGraphics.destroy();
   }
 }

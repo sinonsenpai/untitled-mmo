@@ -4,6 +4,7 @@ import { EquipmentPanel } from '../ui/EquipmentPanel.js';
 import { SkillPanel } from '../ui/SkillPanel.js';
 import { QuestPanel } from '../ui/QuestPanel.js';
 import { ChatPanel } from '../ui/ChatPanel.js';
+import { CraftingPanel } from '../ui/CraftingPanel.js';
 
 export class UIScene extends Phaser.Scene {
   constructor() {
@@ -16,5 +17,6 @@ export class UIScene extends Phaser.Scene {
     new SkillPanel();
     new QuestPanel();
     new ChatPanel();
+    new CraftingPanel();
   }
 }

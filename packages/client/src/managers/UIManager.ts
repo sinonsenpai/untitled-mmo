@@ -1,4 +1,4 @@
-export type PanelType = 'inventory' | 'equipment' | 'skills' | 'quests' | 'chat';
+export type PanelType = 'inventory' | 'equipment' | 'skills' | 'quests' | 'chat' | 'crafting';
 
 export class UIManager {
   private visiblePanels: Set<PanelType> = new Set();

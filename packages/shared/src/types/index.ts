@@ -22,6 +22,14 @@ export interface Item {
   maxStack: number;
   slot?: EquipSlot;
   icon?: string;
+  stats?: {
+    attackBonus?: number;
+    strengthBonus?: number;
+    defenceBonus?: number;
+    rangedBonus?: number;
+    magicBonus?: number;
+    attackSpeed?: number;
+  };
 }
 
 export type EquipSlot =

@@ -3,7 +3,7 @@ import { skillManager } from '../managers/SkillManager.js';
 import { gameState } from '../managers/GameStateManager.js';
 import { levelForXp, xpForLevel } from '@rpg/shared';
 
-const SKILL_ORDER = ['attack', 'strength', 'defence', 'hp', 'woodcutting', 'mining', 'smithing'];
+const SKILL_ORDER = ['attack', 'strength', 'defence', 'hp', 'woodcutting', 'mining', 'smithing', 'fletching'];
 
 export class SkillPanel extends UIPanel {
   constructor() {

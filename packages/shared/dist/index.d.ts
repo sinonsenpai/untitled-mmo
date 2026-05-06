@@ -6,3 +6,4 @@ export * from './constants/GameConstants.js';
 export * from './systems/SkillSystem.js';
 export * from './systems/QuestSystem.js';
 export * from './systems/CombatSystem.js';
+export * from './systems/CraftingSystem.js';

@@ -14,6 +14,7 @@ export function createDefaultPlayer(name: string): PlayerData {
       woodcutting: { name: 'Woodcutting', level: 1, xp: 0, maxLevel: 99 },
       mining: { name: 'Mining', level: 1, xp: 0, maxLevel: 99 },
       smithing: { name: 'Smithing', level: 1, xp: 0, maxLevel: 99 },
+      fletching: { name: 'Fletching', level: 1, xp: 0, maxLevel: 99 },
     },
     inventory: [],
     equipment: {},
