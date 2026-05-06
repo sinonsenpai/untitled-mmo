@@ -3,10 +3,26 @@ import { cartesianToIsometric, getDepth } from '../utils/Isometric.js';
 
 export class NPC extends Phaser.GameObjects.Container {
   private nameText: Phaser.GameObjects.Text;
+  public tileX: number;
+  public tileY: number;
+  public isShopkeeper: boolean;
+  public npcName: string;
 
-  constructor(scene: Phaser.Scene, tileX: number, tileY: number, name: string, color: number = 0x22c55e) {
+  constructor(
+    scene: Phaser.Scene,
+    tileX: number,
+    tileY: number,
+    name: string,
+    color: number = 0x22c55e,
+    isShopkeeper: boolean = false
+  ) {
     const iso = cartesianToIsometric(tileX, tileY);
     super(scene, iso.x, iso.y);
+
+    this.tileX = tileX;
+    this.tileY = tileY;
+    this.isShopkeeper = isShopkeeper;
+    this.npcName = name;
 
     // Shadow under feet
     const shadow = scene.add.ellipse(0, 14, 20, 8, 0x000000, 0.3);
@@ -34,6 +50,20 @@ export class NPC extends Phaser.GameObjects.Container {
 
     // Use z=2000 to match player depth
     this.setDepth(getDepth(tileX, tileY, 2000));
+
+    this.setSize(32, 48);
+    this.setInteractive();
+
+    this.on('pointerover', () => {
+      scene.input.setDefaultCursor('pointer');
+      body.setFillStyle(isShopkeeper ? 0xfbbf24 : 0x4ade80);
+    });
+
+    this.on('pointerout', () => {
+      scene.input.setDefaultCursor('default');
+      body.setFillStyle(color);
+    });
+
     scene.add.existing(this);
   }
 }

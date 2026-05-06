@@ -37,12 +37,23 @@ export interface PlayerData {
     skills: Record<string, Skill>;
     inventory: Item[];
     equipment: Partial<Record<EquipSlot, Item>>;
+    bank: Item[];
+    bankCapacity: number;
+    gold: number;
+}
+export interface ShopItem {
+    itemId: string;
+    buyPrice: number;
+    sellPrice: number;
+    stock: number;
 }
 export interface NPCData {
     id: string;
     name: string;
     position: Position;
     dialogue: string[];
+    shopInventory?: ShopItem[];
+    isShopkeeper?: boolean;
 }
 export interface QuestObjective {
     type: 'kill' | 'gather' | 'talk' | 'skill';

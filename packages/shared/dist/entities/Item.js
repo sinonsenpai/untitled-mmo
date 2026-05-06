@@ -23,6 +23,8 @@ export const ITEM_DATABASE = {
     // Other
     'wooden_shield': { id: 'wooden_shield', name: 'Wooden shield', quantity: 1, maxStack: 1, slot: 'shield', stats: { defenceBonus: 2 } },
     'shrimp': { id: 'shrimp', name: 'Raw shrimp', quantity: 1, maxStack: 999 },
+    'coins': { id: 'coins', name: 'Coins', quantity: 1, maxStack: 999999 },
+    'bread': { id: 'bread', name: 'Bread', quantity: 1, maxStack: 999 },
 };
 export function getItem(id) {
     const template = ITEM_DATABASE[id];

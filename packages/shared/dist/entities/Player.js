@@ -16,6 +16,9 @@ export function createDefaultPlayer(name) {
         },
         inventory: [],
         equipment: {},
+        bank: [],
+        bankCapacity: 400,
+        gold: 0,
     };
 }
 export function addItemToInventory(inventory, item) {

@@ -107,5 +107,16 @@ export class PreloadScene extends Phaser.Scene {
     fletchingGraphics.fillRect(20, 18, 4, 4);
     fletchingGraphics.generateTexture('fletching_table', 32, 40);
     fletchingGraphics.destroy();
+
+    // Bank chest
+    const chestGraphics = this.make.graphics({ x: 0, y: 0 });
+    chestGraphics.fillStyle(0x78350f, 1);
+    chestGraphics.fillRect(6, 16, 20, 12);
+    chestGraphics.fillStyle(0x92400e, 1);
+    chestGraphics.fillRect(8, 14, 16, 4);
+    chestGraphics.fillStyle(0xffcc00, 1);
+    chestGraphics.fillRect(14, 12, 4, 4);
+    chestGraphics.generateTexture('bank_chest', 32, 28);
+    chestGraphics.destroy();
   }
 }

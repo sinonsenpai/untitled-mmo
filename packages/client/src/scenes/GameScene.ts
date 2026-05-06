@@ -9,6 +9,8 @@ import { questManager } from '../managers/QuestManager.js';
 import { uiManager } from '../managers/UIManager.js';
 import { gatheringManager } from '../managers/GatheringManager.js';
 import { craftingManager } from '../managers/CraftingManager.js';
+import { bankManager } from '../managers/BankManager.js';
+import { shopManager } from '../managers/ShopManager.js';
 import { gameNotifications } from '../ui/GameNotifications.js';
 import { MAP_WIDTH, MAP_HEIGHT } from '@rpg/shared';
 
@@ -68,6 +70,8 @@ const OBJECTS = [
   { type: 'rock', x: 12, y: 6 },
   // House
   { type: 'house', x: 10, y: 10 },
+  // Bank chest
+  { type: 'bank_chest', x: 10, y: 6 },
   // Crafting stations
   { type: 'anvil', x: 8, y: 8 },
   { type: 'fletching_table', x: 12, y: 8 },
@@ -98,6 +102,8 @@ export class GameScene extends Phaser.Scene {
   private progressBg!: Phaser.GameObjects.Rectangle;
   private progressFill!: Phaser.GameObjects.Rectangle;
   private gatherTargetIndicator!: Phaser.GameObjects.Container;
+  private npcs: NPC[] = [];
+  private activeDialogue: HTMLDivElement | null = null;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -114,7 +120,22 @@ export class GameScene extends Phaser.Scene {
     gameState.setPlayerPosition(10, 10);
 
     // Create NPC
-    new NPC(this, 12, 11, 'Guide', 0x22c55e);
+    const guide = new NPC(this, 12, 11, 'Guide', 0x22c55e);
+    this.npcs.push(guide);
+
+    // Create Shopkeeper
+    const shopkeeper = new NPC(this, 14, 10, 'Shopkeeper', 0xfbbf24, true);
+    this.npcs.push(shopkeeper);
+
+    // Register shop data
+    shopManager.registerShop('general_store', 'General Store', [
+      { itemId: 'bronze_dagger', buyPrice: 100, sellPrice: 50, stock: 10 },
+      { itemId: 'wooden_shield', buyPrice: 50, sellPrice: 25, stock: 10 },
+      { itemId: 'bread', buyPrice: 15, sellPrice: 8, stock: 100 },
+      { itemId: 'feather', buyPrice: 5, sellPrice: 2, stock: -1 },
+      { itemId: 'bowstring', buyPrice: 20, sellPrice: 10, stock: -1 },
+      { itemId: 'tin_ore', buyPrice: 50, sellPrice: 25, stock: -1 },
+    ]);
 
     // Camera setup
     this.cameras.main.setBounds(-800, -400, 1600, 1200);
@@ -178,6 +199,25 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-F5', () => uiManager.togglePanel('chat'));
     this.input.keyboard?.on('keydown-F6', () => uiManager.togglePanel('crafting'));
     this.input.keyboard?.on('keydown-ENTER', () => uiManager.showPanel('chat'));
+    this.input.keyboard?.on('keydown-B', () => uiManager.togglePanel('bank'));
+
+    // NPC click handling
+    this.npcs.forEach((npc) => {
+      npc.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        if (pointer.button !== 0) return;
+        this.dismissDialogue();
+        this.player.moveToTile(npc.tileX, npc.tileY);
+        gameState.setPlayerPosition(npc.tileX, npc.tileY);
+        this.time.delayedCall(600, () => {
+          if (npc.isShopkeeper) {
+            shopManager.openShop('general_store');
+            uiManager.showPanel('shop');
+          } else {
+            this.showDialogue(npc);
+          }
+        });
+      });
+    });
 
     // Starter items
     inventoryManager.addItem('logs', 5);
@@ -195,6 +235,9 @@ export class GameScene extends Phaser.Scene {
     questManager.startQuest('tutorial');
 
     gameState.addChatMessage('System', 'Welcome! Click trees/rocks to gather, or ground to move. F1-F5 for panels, F6 for crafting.');
+
+    // Starter gold
+    gameState.getState().player.gold = 500;
 
     // Show System messages as toasts even when chat panel is closed
     gameState.on('chat', (messages: unknown) => {
@@ -332,6 +375,32 @@ export class GameScene extends Phaser.Scene {
             craftingManager.openCrafting(skillType);
           });
         });
+      } else if (obj.type === 'bank_chest') {
+        const sprite = this.add.image(iso.x, iso.y - 16, 'bank_chest');
+        sprite.setDepth(getDepth(obj.x, obj.y, 1000));
+        sprite.setOrigin(0.5, 1);
+
+        sprite.setInteractive();
+
+        sprite.on('pointerover', () => {
+          this.input.setDefaultCursor('pointer');
+          sprite.setTint(0xcccccc);
+        });
+
+        sprite.on('pointerout', () => {
+          this.input.setDefaultCursor('default');
+          sprite.clearTint();
+        });
+
+        sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+          if (pointer.button !== 0) return;
+          this.player.moveToTile(obj.x, obj.y);
+          gameState.setPlayerPosition(obj.x, obj.y);
+          this.showTargetIndicator(obj.x, obj.y);
+          this.time.delayedCall(600, () => {
+            uiManager.showPanel('bank');
+          });
+        });
       } else {
         // Non-gatherable (house)
         const sprite = this.add.image(iso.x, iso.y - 16, obj.type);
@@ -406,6 +475,54 @@ export class GameScene extends Phaser.Scene {
           sprite.setInteractive();
         }
       });
+    }
+  }
+
+  private showDialogue(npc: NPC) {
+    this.dismissDialogue();
+
+    const div = document.createElement('div');
+    div.id = 'npc-dialogue';
+    div.style.cssText = `
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30, 30, 40, 0.97);
+      border: 2px solid #5a5a6a;
+      border-radius: 6px;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 13px;
+      padding: 12px 16px;
+      z-index: 500;
+      max-width: 400px;
+      text-align: center;
+    `;
+
+    div.innerHTML = `
+      <div style="margin-bottom:8px;color:#8af;">${npc.npcName} says:</div>
+      <div style="margin-bottom:10px;">"Welcome! Click trees to chop wood, rocks to mine ore. Use F1-F6 for panels."</div>
+      <button style="
+        background:#3a3a4a;
+        border:1px solid #5a5a6a;
+        border-radius:3px;
+        color:#fff;
+        padding:4px 16px;
+        cursor:pointer;
+        font-size:12px;
+      ">Continue</button>
+    `;
+
+    div.querySelector('button')!.onclick = () => this.dismissDialogue();
+    document.body.appendChild(div);
+    this.activeDialogue = div;
+  }
+
+  private dismissDialogue() {
+    if (this.activeDialogue) {
+      this.activeDialogue.remove();
+      this.activeDialogue = null;
     }
   }
 }

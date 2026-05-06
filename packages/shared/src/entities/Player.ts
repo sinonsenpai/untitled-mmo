@@ -18,6 +18,9 @@ export function createDefaultPlayer(name: string): PlayerData {
     },
     inventory: [],
     equipment: {},
+    bank: [],
+    bankCapacity: 400,
+    gold: 0,
   };
 }
 
