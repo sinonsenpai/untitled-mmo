@@ -199,14 +199,7 @@ export class GameScene extends Phaser.Scene {
     // Update progress bar
     if (gatheringManager.isCurrentlyGathering()) {
       this.progressBar.setVisible(true);
-      const targetId = gatheringManager.getCurrentTarget();
-      if (targetId) {
-        const obj = gatheringManager.getObjects().find(o => `${o.type}_${o.x}_${o.y}` === targetId);
-        if (obj) {
-          const iso = cartesianToIsometric(obj.x, obj.y);
-          this.progressBar.setPosition(iso.x, iso.y - 50);
-        }
-      }
+      this.progressBar.setPosition(this.player.x, this.player.y - 50);
       const progress = gatheringManager.getProgress();
       this.progressFill.setScale(progress, 1);
     } else if (craftingManager.isCurrentlyCrafting()) {
@@ -337,7 +330,7 @@ export class GameScene extends Phaser.Scene {
 
   private createProgressBar() {
     this.progressBar = this.add.container(0, 0);
-    this.progressBar.setDepth(3000);
+    this.progressBar.setDepth(999999);
     this.progressBar.setVisible(false);
 
     this.progressBg = this.add.rectangle(0, 0, 50, 8, 0x000000, 0.8);
