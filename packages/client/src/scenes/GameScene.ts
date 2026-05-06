@@ -9,6 +9,7 @@ import { questManager } from '../managers/QuestManager.js';
 import { uiManager } from '../managers/UIManager.js';
 import { gatheringManager } from '../managers/GatheringManager.js';
 import { craftingManager } from '../managers/CraftingManager.js';
+import { gameNotifications } from '../ui/GameNotifications.js';
 import { MAP_WIDTH, MAP_HEIGHT } from '@rpg/shared';
 
 // Simple 20x20 map data (0=grass, 1=dirt, 2=water)
@@ -119,6 +120,9 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(-800, -400, 1600, 1200);
     this.cameras.main.setZoom(1.2);
 
+    // Prevent browser from handling these keys
+    this.input.keyboard?.addCapture(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F12', 'ENTER']);
+
     // Input handling
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (pointer.button === 1 || pointer.button === 2) {
@@ -191,6 +195,15 @@ export class GameScene extends Phaser.Scene {
     questManager.startQuest('tutorial');
 
     gameState.addChatMessage('System', 'Welcome! Click trees/rocks to gather, or ground to move. F1-F5 for panels, F6 for crafting.');
+
+    // Show System messages as toasts even when chat panel is closed
+    gameState.on('chat', (messages: unknown) => {
+      const msgs = messages as { sender: string; text: string }[];
+      const last = msgs[msgs.length - 1];
+      if (last && last.sender === 'System') {
+        gameNotifications.show(last.text);
+      }
+    });
   }
 
   update(time: number, delta: number) {
