@@ -1,0 +1,17 @@
+{
+  "name": "runescape-esk-game",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w packages/client",
+    "build": "npm run build -w packages/client",
+    "server": "npm run start -w packages/server"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}
