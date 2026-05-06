@@ -232,7 +232,7 @@ export class GameScene extends Phaser.Scene {
         gatheringManager.registerObject(obj.type as 'tree' | 'rock', obj.x, obj.y);
 
         const sprite: GatherableSprite = this.add.image(iso.x, iso.y - 16, obj.type);
-        sprite.setDepth(getDepth(obj.x, obj.y, 2));
+        sprite.setDepth(getDepth(obj.x, obj.y, 1000));
         sprite.setOrigin(0.5, 1);
         sprite.gatherId = gatherId;
         sprite.tileX = obj.x;
@@ -281,7 +281,7 @@ export class GameScene extends Phaser.Scene {
       } else {
         // Non-gatherable (house)
         const sprite = this.add.image(iso.x, iso.y - 16, obj.type);
-        sprite.setDepth(getDepth(obj.x, obj.y, 2));
+        sprite.setDepth(getDepth(obj.x, obj.y, 1000));
         sprite.setOrigin(0.5, 1);
       }
     }

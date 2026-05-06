@@ -16,20 +16,23 @@ export class ChatPanel extends UIPanel {
     this.container.style.flexDirection = 'column';
 
     const content = this.getContentDiv();
-    content.style.flex = '1';
-    content.style.overflow = 'hidden';
-    content.style.display = 'flex';
-    content.style.flexDirection = 'column';
-    content.style.padding = '0';
+    content.style.cssText = `
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      min-height: 0;
+      overflow: hidden;
+    `;
 
     this.messagesDiv = document.createElement('div');
     this.messagesDiv.style.cssText = `
       flex: 1;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+      min-height: 0;
+      word-break: break-word;
     `;
     content.appendChild(this.messagesDiv);
 
@@ -39,6 +42,7 @@ export class ChatPanel extends UIPanel {
       border-top: 1px solid #4a4a5a;
       display: flex;
       gap: 6px;
+      flex-shrink: 0;
     `;
     this.input = document.createElement('input');
     this.input.type = 'text';
@@ -75,7 +79,7 @@ export class ChatPanel extends UIPanel {
     this.messagesDiv.innerHTML = recent
       .map(
         (m) =>
-          `<div style="font-size:11px;line-height:1.4;"><span style="color:#8af;font-weight:bold;">${m.sender}:</span> <span style="color:#ddd;">${m.text}</span></div>`
+          `<div style="font-size:11px;line-height:1.4;margin-bottom:2px;word-break:break-word;"><span style="color:#8af;font-weight:bold;">${m.sender}:</span> <span style="color:#ddd;">${m.text}</span></div>`
       )
       .join('');
     this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;

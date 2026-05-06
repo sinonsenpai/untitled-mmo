@@ -37,7 +37,7 @@ export class Player extends Phaser.GameObjects.Container {
     selectBox.setStrokeStyle(1, 0xffffff, 0.5);
     this.add(selectBox);
 
-    this.setDepth(getDepth(tileX, tileY, 10));
+    this.setDepth(getDepth(tileX, tileY, 2000));
     scene.add.existing(this);
   }
 
@@ -67,9 +67,9 @@ export class Player extends Phaser.GameObjects.Container {
     }
 
     // Always update depth based on current position
-    // Round tile coords so depth snaps to nearest tile - prevents clipping during movement
+    // Continuous (unrounded) depth for smooth transitions during movement
     const currentTilePos = isometricToCartesian(this.x, this.y);
-    this.setDepth(getDepth(Math.round(currentTilePos.x), Math.round(currentTilePos.y), 10));
+    this.setDepth(getDepth(currentTilePos.x, currentTilePos.y, 2000));
   }
 
   getTilePosition(): { x: number; y: number } {

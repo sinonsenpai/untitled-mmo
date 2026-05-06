@@ -32,8 +32,8 @@ export class NPC extends Phaser.GameObjects.Container {
     this.nameText.setOrigin(0.5, 1);
     this.add(this.nameText);
 
-    // Use z=10 to match player depth
-    this.setDepth(getDepth(tileX, tileY, 10));
+    // Use z=2000 to match player depth
+    this.setDepth(getDepth(tileX, tileY, 2000));
     scene.add.existing(this);
   }
 }
