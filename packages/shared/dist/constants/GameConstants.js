@@ -10,6 +10,8 @@ export const SKILL_NAMES = [
     'woodcutting',
     'mining',
     'smithing',
+    'fletching',
+    'firemaking',
 ];
 export function xpForLevel(level) {
     let total = 0;
