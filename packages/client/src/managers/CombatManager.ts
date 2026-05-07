@@ -19,6 +19,8 @@ const ATTACK_INTERVAL = 2400;
 export interface CombatNPCRef {
   id: string;
   stats: CombatStats;
+  npcTileX: number;
+  npcTileY: number;
 }
 
 export class CombatManager {
@@ -36,7 +38,7 @@ export class CombatManager {
     return this.combatProfiles.get(id);
   }
 
-  startCombat(npcId: string, npcName: string): boolean {
+  startCombat(npcId: string, npcName: string, npcTileX: number, npcTileY: number): boolean {
     if (this.currentTarget || this.isDead) return false;
     const profile = this.combatProfiles.get(npcId);
     if (!profile) return false;
@@ -52,7 +54,7 @@ export class CombatManager {
       dropTable: profile.dropTable,
     };
 
-    this.currentTarget = { id: npcId, stats };
+    this.currentTarget = { id: npcId, stats, npcTileX, npcTileY };
 
     this.performAttack();
     this.attackTimer = setInterval(() => {
@@ -67,6 +69,15 @@ export class CombatManager {
     if (!this.currentTarget || this.isDead) return;
     const target = this.currentTarget;
     const player = gameState.getState().player;
+
+    // Check distance — stop combat if player walks more than 5 tiles away
+    const dx = Math.abs(target.npcTileX - player.position.x);
+    const dy = Math.abs(target.npcTileY - player.position.y);
+    if (dx > 3 || dy > 3) {
+      gameState.addChatMessage('System', 'You flee from combat.');
+      this.stopCombat();
+      return;
+    }
 
     const attackLevel = (player.skills.attack?.level ?? 1) + (this.attackStyle === 'accurate' ? 3 : 0);
     const strengthLevel = (player.skills.strength?.level ?? 1) + (this.attackStyle === 'aggressive' ? 3 : 0);

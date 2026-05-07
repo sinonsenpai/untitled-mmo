@@ -290,7 +290,7 @@ export class GameScene extends Phaser.Scene {
         gameState.setPlayerPosition(walkX, walkY);
         this.time.delayedCall(600, () => {
           if (npc.combatId) {
-            combatManager.startCombat(npc.combatId, npc.npcName.replace(/ *\(Lvl \d+\)/, ''));
+            combatManager.startCombat(npc.combatId, npc.npcName.replace(/ *\(Lvl \d+\)/, ''), npc.tileX, npc.tileY);
           }
         });
       });
