@@ -269,6 +269,9 @@ export class GameScene extends Phaser.Scene {
             shopManager.openShop('general_store');
             uiManager.showPanel('shop');
           } else {
+            if (npc.npcName === 'Guide') {
+              questManager.updateObjective('tutorial', 'guide', 1);
+            }
             this.showDialogue(npc);
           }
         });
@@ -360,6 +363,10 @@ export class GameScene extends Phaser.Scene {
       const { npcId, drops } = data as { npcId: string; drops: { itemId: string; quantity: number }[] };
       const npc = this.combatNpcs.find((n) => n.combatId === npcId);
       if (!npc) return;
+
+      if (npc.combatType) {
+        questManager.recordProgress(npc.combatType, 1);
+      }
 
       npc.die();
 

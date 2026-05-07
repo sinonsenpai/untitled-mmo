@@ -1,10 +1,12 @@
-import type { Quest, QuestObjective } from '../types/index.js';
+import type { Quest, QuestObjective, QuestRewards } from '../types/index.js';
 
 export function createQuest(
   id: string,
   name: string,
   description: string,
-  objectives: QuestObjective[]
+  objectives: QuestObjective[],
+  rewards: QuestRewards = {},
+  prerequisites: string[] = []
 ): Quest {
   return {
     id,
@@ -12,12 +14,18 @@ export function createQuest(
     description,
     state: 'not_started',
     objectives: objectives.map((o) => ({ ...o, current: 0 })),
-    rewards: {},
+    rewards,
+    prerequisites,
   };
 }
 
-export function startQuest(quest: Quest): Quest {
+export function canStartQuest(quest: Quest, completedQuestIds: Set<string> = new Set()): boolean {
+  return quest.prerequisites.every((questId) => completedQuestIds.has(questId));
+}
+
+export function startQuest(quest: Quest, completedQuestIds: Set<string> = new Set()): Quest {
   if (quest.state !== 'not_started') return quest;
+  if (!canStartQuest(quest, completedQuestIds)) return quest;
   return { ...quest, state: 'in_progress' };
 }
 
