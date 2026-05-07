@@ -86,6 +86,11 @@ const TILE_TEXTURES: Record<number, string> = {
   2: 'water',
 };
 
+const CRAFTING_STATIONS: Record<'smithing' | 'fletching', { x: number; y: number }> = {
+  smithing: { x: 8, y: 8 },
+  fletching: { x: 12, y: 8 },
+};
+
 interface GatherableSprite extends Phaser.GameObjects.Image {
   gatherId?: string;
   tileX?: number;
@@ -401,6 +406,7 @@ export class GameScene extends Phaser.Scene {
 
   update(time: number, delta: number) {
     this.player.update(time, delta);
+    this.enforceCraftingStationRange();
 
     // Aggressive NPC auto-initiation (1-tile aggression radius)
     if (!combatManager.isInCombat() && !combatManager.playerIsDead()) {
@@ -442,6 +448,26 @@ export class GameScene extends Phaser.Scene {
       const targetY = this.player.y - this.cameras.main.height / 2 / this.cameras.main.zoom;
       this.cameras.main.scrollX += (targetX - this.cameras.main.scrollX) * 0.05;
       this.cameras.main.scrollY += (targetY - this.cameras.main.scrollY) * 0.05;
+    }
+  }
+
+  private enforceCraftingStationRange() {
+    if (!craftingManager.isCurrentlyCrafting()) return;
+
+    const skillType = craftingManager.getCurrentSkillType();
+    if (!skillType) return;
+
+    const station = CRAFTING_STATIONS[skillType];
+    if (!station) return;
+
+    const playerTile = this.player.getTilePosition();
+    const dx = Math.abs(playerTile.x - station.x);
+    const dy = Math.abs(playerTile.y - station.y);
+    const withinRange = dx <= 1 && dy <= 1;
+
+    if (!withinRange) {
+      craftingManager.stopCrafting();
+      gameState.addChatMessage('System', `You stop crafting because you moved away from the ${skillType === 'smithing' ? 'anvil' : 'fletching table'}.`);
     }
   }
 
@@ -669,21 +695,85 @@ export class GameScene extends Phaser.Scene {
       text-align: center;
     `;
 
-    div.innerHTML = `
-      <div style="margin-bottom:8px;color:#8af;">${npc.npcName} says:</div>
-      <div style="margin-bottom:10px;">"Welcome! Click trees to chop wood, rocks to mine ore. Use F1-F6 for panels."</div>
-      <button style="
-        background:#3a3a4a;
-        border:1px solid #5a5a6a;
-        border-radius:3px;
-        color:#fff;
-        padding:4px 16px;
-        cursor:pointer;
-        font-size:12px;
-      ">Continue</button>
-    `;
+    if (npc.npcName === 'Guide') {
+      const availableQuests = questManager
+        .getStartableQuests()
+        .filter((quest) => quest.id !== 'tutorial');
+      const activeQuests = questManager
+        .getAllQuests()
+        .filter((quest) => quest.state === 'in_progress');
 
-    div.querySelector('button')!.onclick = () => this.dismissDialogue();
+      const availableHtml = availableQuests.length > 0
+        ? availableQuests.map((quest) => `
+          <div style="margin-bottom:8px;padding:8px;border:1px solid #505068;border-radius:4px;background:rgba(20,20,28,0.6);text-align:left;">
+            <div style="color:#fff;font-weight:600;margin-bottom:4px;">${quest.name}</div>
+            <div style="color:#bfc6d8;font-size:11px;margin-bottom:6px;">${quest.description}</div>
+            <button data-quest-id="${quest.id}" style="
+              background:#3d6f4a;
+              border:1px solid #69a77b;
+              border-radius:3px;
+              color:#fff;
+              padding:4px 10px;
+              cursor:pointer;
+              font-size:11px;
+            ">Accept</button>
+          </div>
+        `).join('')
+        : '<div style="font-size:11px;color:#bbb;margin-bottom:8px;">No new quests right now. Keep training and check back.</div>';
+
+      const activeHtml = activeQuests.length > 0
+        ? `<div style="font-size:11px;color:#ccc;margin-bottom:10px;text-align:left;">
+          <div style="color:#9cc4ff;margin-bottom:4px;">Current quests:</div>
+          ${activeQuests.map((quest) => `- ${quest.name}`).join('<br>')}
+        </div>`
+        : '';
+
+      div.innerHTML = `
+        <div style="margin-bottom:8px;color:#8af;">${npc.npcName} says:</div>
+        <div style="margin-bottom:10px;">"Need work? I can set you up with tasks."</div>
+        ${activeHtml}
+        <div style="margin-bottom:8px;color:#d6d6e6;font-size:12px;">Available quests</div>
+        ${availableHtml}
+        <button data-close-dialogue="1" style="
+          background:#3a3a4a;
+          border:1px solid #5a5a6a;
+          border-radius:3px;
+          color:#fff;
+          padding:4px 16px;
+          cursor:pointer;
+          font-size:12px;
+        ">Close</button>
+      `;
+
+      div.querySelectorAll('button[data-quest-id]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const questId = button.getAttribute('data-quest-id');
+          if (!questId) return;
+          const started = questManager.startQuest(questId);
+          if (started) {
+            this.dismissDialogue();
+            this.showDialogue(npc);
+          }
+        });
+      });
+      div.querySelector('button[data-close-dialogue="1"]')?.addEventListener('click', () => this.dismissDialogue());
+    } else {
+      div.innerHTML = `
+        <div style="margin-bottom:8px;color:#8af;">${npc.npcName} says:</div>
+        <div style="margin-bottom:10px;">"Welcome! Click trees to chop wood, rocks to mine ore. Use F1-F6 for panels."</div>
+        <button data-close-dialogue="1" style="
+          background:#3a3a4a;
+          border:1px solid #5a5a6a;
+          border-radius:3px;
+          color:#fff;
+          padding:4px 16px;
+          cursor:pointer;
+          font-size:12px;
+        ">Continue</button>
+      `;
+      div.querySelector('button[data-close-dialogue="1"]')?.addEventListener('click', () => this.dismissDialogue());
+    }
+
     document.body.appendChild(div);
     this.activeDialogue = div;
   }
