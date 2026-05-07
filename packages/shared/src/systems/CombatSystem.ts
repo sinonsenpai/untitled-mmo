@@ -1,15 +1,71 @@
-export function calculateMeleeDamage(
-  attackLevel: number,
-  strengthLevel: number,
-  equipmentBonus: number = 0
-): number {
-  const base = Math.floor(
-    0.5 + (attackLevel * (strengthLevel + equipmentBonus)) / 64
-  );
-  const variance = Math.random() * 0.2 + 0.9;
-  return Math.max(0, Math.floor(base * variance));
+import type { CombatStats, DropTable, Drop, Item } from '../types/index.js';
+
+export function calculateMaxHit(strengthLevel: number, strengthBonus: number): number {
+  return Math.floor(0.5 + (strengthLevel * (strengthBonus + 64)) / 640);
 }
 
-export function calculateMaxHp(level: number): number {
-  return level;
+export function calculateAccuracyRoll(attackLevel: number, attackBonus: number): number {
+  return attackLevel * (attackBonus + 64);
+}
+
+export function calculateDefenceRoll(defenceLevel: number, defenceBonus: number): number {
+  return defenceLevel * (defenceBonus + 64);
+}
+
+export function rollHit(accuracyRoll: number, defenceRoll: number): boolean {
+  const hitChance = accuracyRoll / (accuracyRoll + defenceRoll);
+  return Math.random() < hitChance;
+}
+
+export function rollDamage(maxHit: number): number {
+  return Math.floor(Math.random() * (maxHit + 1));
+}
+
+export function rollDrop(dropTable: DropTable): Drop[] {
+  const drops: Drop[] = [];
+
+  if (dropTable.always) {
+    drops.push(...dropTable.always);
+  }
+
+  function rollRarity(items: Drop[] | undefined, baseChance: number) {
+    if (!items) return;
+    for (const drop of items) {
+      const chance = drop.chance ?? baseChance;
+      if (Math.random() < chance) {
+        drops.push({ itemId: drop.itemId, quantity: drop.quantity });
+      }
+    }
+  }
+
+  rollRarity(dropTable.common, 0.5);
+  rollRarity(dropTable.uncommon, 0.1);
+  rollRarity(dropTable.rare, 0.01);
+
+  return drops;
+}
+
+export function getCombatLevel(stats: CombatStats): number {
+  const base = (stats.defence + stats.hp) * 0.25;
+  const melee = (stats.attack + stats.strength) * 0.325;
+  return Math.floor(base + melee);
+}
+
+export function getEquipmentBonus(equipment: Partial<Record<string, Item>>, style: string): number {
+  let bonus = 0;
+  for (const item of Object.values(equipment)) {
+    if (!item?.stats) continue;
+    switch (style) {
+      case 'accurate':
+        bonus += item.stats.attackBonus ?? 0;
+        break;
+      case 'aggressive':
+        bonus += item.stats.strengthBonus ?? 0;
+        break;
+      case 'defensive':
+        bonus += item.stats.defenceBonus ?? 0;
+        break;
+    }
+  }
+  return bonus;
 }

@@ -25,6 +25,10 @@ export const ITEM_DATABASE = {
     'shrimp': { id: 'shrimp', name: 'Raw shrimp', quantity: 1, maxStack: 999 },
     'coins': { id: 'coins', name: 'Coins', quantity: 1, maxStack: 999999 },
     'bread': { id: 'bread', name: 'Bread', quantity: 1, maxStack: 999 },
+    'bones': { id: 'bones', name: 'Bones', quantity: 1, maxStack: 999 },
+    'raw_beef': { id: 'raw_beef', name: 'Raw beef', quantity: 1, maxStack: 999 },
+    'cowhide': { id: 'cowhide', name: 'Cowhide', quantity: 1, maxStack: 999 },
+    'raw_rat_meat': { id: 'raw_rat_meat', name: 'Raw rat meat', quantity: 1, maxStack: 999 },
 };
 export function getItem(id) {
     const template = ITEM_DATABASE[id];

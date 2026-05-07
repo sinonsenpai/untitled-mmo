@@ -83,3 +83,25 @@ export interface ChatMessage {
     text: string;
     timestamp: number;
 }
+export interface Drop {
+    itemId: string;
+    quantity: number;
+    chance?: number;
+}
+export interface DropTable {
+    always?: Drop[];
+    common?: Drop[];
+    uncommon?: Drop[];
+    rare?: Drop[];
+}
+export interface CombatStats {
+    hp: number;
+    maxHp: number;
+    attack: number;
+    strength: number;
+    defence: number;
+    aggression: 'passive' | 'aggressive';
+    attackRange: number;
+    dropTable: DropTable;
+}
+export type AttackStyle = 'accurate' | 'aggressive' | 'defensive';

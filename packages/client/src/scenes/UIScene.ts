@@ -7,6 +7,7 @@ import { ChatPanel } from '../ui/ChatPanel.js';
 import { CraftingPanel } from '../ui/CraftingPanel.js';
 import { BankPanel } from '../ui/BankPanel.js';
 import { ShopPanel } from '../ui/ShopPanel.js';
+import { CombatPanel } from '../ui/CombatPanel.js';
 import { gameNotifications } from '../ui/GameNotifications.js';
 
 export class UIScene extends Phaser.Scene {
@@ -23,5 +24,6 @@ export class UIScene extends Phaser.Scene {
     new CraftingPanel();
     new BankPanel();
     new ShopPanel();
+    new CombatPanel();
   }
 }

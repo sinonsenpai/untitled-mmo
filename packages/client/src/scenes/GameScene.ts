@@ -12,7 +12,9 @@ import { craftingManager } from '../managers/CraftingManager.js';
 import { bankManager } from '../managers/BankManager.js';
 import { shopManager } from '../managers/ShopManager.js';
 import { firemakingManager } from '../managers/FiremakingManager.js';
+import { combatManager } from '../managers/CombatManager.js';
 import { gameNotifications } from '../ui/GameNotifications.js';
+import { getItem } from '@rpg/shared';
 import { MAP_WIDTH, MAP_HEIGHT } from '@rpg/shared';
 
 // Simple 20x20 map data (0=grass, 1=dirt, 2=water)
@@ -106,6 +108,8 @@ export class GameScene extends Phaser.Scene {
   private npcs: NPC[] = [];
   private activeDialogue: HTMLDivElement | null = null;
   private activeFires: { tileX: number; tileY: number; sprite: Phaser.GameObjects.Image; timer: Phaser.Time.TimerEvent }[] = [];
+  private combatNpcs: NPC[] = [];
+  private groundLoot: { sprite: Phaser.GameObjects.Image; drops: { itemId: string; quantity: number }[]; tileX: number; tileY: number; timer: Phaser.Time.TimerEvent }[] = [];
 
   constructor() {
     super({ key: 'GameScene' });
@@ -139,12 +143,58 @@ export class GameScene extends Phaser.Scene {
       { itemId: 'tin_ore', buyPrice: 50, sellPrice: 25, stock: -1 },
     ]);
 
+    // Combat NPCs
+    combatManager.registerProfile('cow', {
+      hp: 8, maxHp: 8, attack: 1, strength: 1, defence: 1,
+      aggression: 'passive', attackRange: 1,
+      dropTable: {
+        always: [{ itemId: 'bones', quantity: 1 }],
+        common: [{ itemId: 'raw_beef', quantity: 1 }, { itemId: 'cowhide', quantity: 1 }],
+      },
+    });
+    combatManager.registerProfile('goblin', {
+      hp: 12, maxHp: 12, attack: 3, strength: 3, defence: 2,
+      aggression: 'aggressive', attackRange: 1,
+      dropTable: {
+        always: [{ itemId: 'bones', quantity: 1 }],
+        common: [{ itemId: 'coins', quantity: 5 }],
+        uncommon: [{ itemId: 'bronze_helm', quantity: 1 }],
+      },
+    });
+    combatManager.registerProfile('giant_rat', {
+      hp: 5, maxHp: 5, attack: 2, strength: 2, defence: 1,
+      aggression: 'aggressive', attackRange: 1,
+      dropTable: {
+        always: [{ itemId: 'bones', quantity: 1 }],
+        common: [{ itemId: 'raw_rat_meat', quantity: 1 }],
+      },
+    });
+
+    // Spawn combat NPCs
+    const combatSpawns = [
+      { id: 'cow1', type: 'cow', x: 3, y: 10 },
+      { id: 'cow2', type: 'cow', x: 5, y: 12 },
+      { id: 'cow3', type: 'cow', x: 18, y: 14 },
+      { id: 'goblin1', type: 'goblin', x: 15, y: 3 },
+      { id: 'goblin2', type: 'goblin', x: 17, y: 2 },
+      { id: 'rat1', type: 'giant_rat', x: 8, y: 14 },
+      { id: 'rat2', type: 'giant_rat', x: 9, y: 15 },
+    ];
+
+    for (const spawn of combatSpawns) {
+      const profile = combatManager.getProfile(spawn.type);
+      if (!profile) continue;
+      combatManager.registerProfile(spawn.id, profile);
+      const npc = new NPC(this, spawn.x, spawn.y, spawn.type.replace(/_/g, ' '), undefined, false, spawn.id, spawn.type, profile);
+      this.combatNpcs.push(npc);
+    }
+
     // Camera setup
     this.cameras.main.setBounds(-800, -400, 1600, 1200);
     this.cameras.main.setZoom(1.2);
 
     // Prevent browser from handling these keys
-    this.input.keyboard?.addCapture(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F12', 'ENTER']);
+    this.input.keyboard?.addCapture(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F12', 'ENTER']);
 
     // Input handling
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
@@ -200,6 +250,7 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-F4', () => uiManager.togglePanel('quests'));
     this.input.keyboard?.on('keydown-F5', () => uiManager.togglePanel('chat'));
     this.input.keyboard?.on('keydown-F6', () => uiManager.togglePanel('crafting'));
+    this.input.keyboard?.on('keydown-F7', () => uiManager.togglePanel('combat'));
     this.input.keyboard?.on('keydown-ENTER', () => uiManager.showPanel('chat'));
     this.input.keyboard?.on('keydown-B', () => {
       gameState['emit']('bank', gameState.getState().player.bank);
@@ -224,6 +275,27 @@ export class GameScene extends Phaser.Scene {
       });
     });
 
+    // Combat NPC click handling
+    this.combatNpcs.forEach((npc) => {
+      npc.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        if (pointer.button !== 0 || npc.isDead) return;
+        this.dismissDialogue();
+        // Walk adjacent to NPC
+        const dx = npc.tileX - Math.round(gameState.getState().player.position.x);
+        const dy = npc.tileY - Math.round(gameState.getState().player.position.y);
+        const dist = Math.max(Math.abs(dx), Math.abs(dy));
+        const walkX = dist > 1 ? npc.tileX - (dx > 0 ? 1 : dx < 0 ? -1 : 0) : Math.round(gameState.getState().player.position.x);
+        const walkY = dist > 1 ? npc.tileY - (dy > 0 ? 1 : dy < 0 ? -1 : 0) : Math.round(gameState.getState().player.position.y);
+        this.player.moveToTile(walkX, walkY);
+        gameState.setPlayerPosition(walkX, walkY);
+        this.time.delayedCall(600, () => {
+          if (npc.combatId) {
+            combatManager.startCombat(npc.combatId, npc.npcName.replace(/ *\(Lvl \d+\)/, ''));
+          }
+        });
+      });
+    });
+
     // Starter items
     inventoryManager.addItem('logs', 5);
     inventoryManager.addItem('bronze_dagger', 1);
@@ -239,7 +311,7 @@ export class GameScene extends Phaser.Scene {
     // Start tutorial quest
     questManager.startQuest('tutorial');
 
-    gameState.addChatMessage('System', 'Welcome! Click trees/rocks to gather, or ground to move. F1-F5 for panels, F6 for crafting.');
+    gameState.addChatMessage('System', 'Welcome! Click trees/rocks to gather, enemies to fight, or ground to move. F1-F7 for panels.');
 
     // Starter gold
     gameState.getState().player.gold = 500;
@@ -256,6 +328,50 @@ export class GameScene extends Phaser.Scene {
     // Transient toasts — not persisted in chat
     gameState.on('systemToast', (message: unknown) => {
       gameNotifications.show(message as string, 2000);
+    });
+
+    // Combat: floating damage numbers
+    gameState.on('combatHit', (data: unknown) => {
+      const { target, damage, isPlayer } = data as { target: string; damage: number; isPlayer: boolean };
+      if (target === 'player') {
+        const iso = cartesianToIsometric(
+          gameState.getState().player.position.x,
+          gameState.getState().player.position.y
+        );
+        this.showDamageNumber(iso.x, iso.y - 40, damage, false);
+      } else {
+        const npc = this.combatNpcs.find((n) => n.combatId === target);
+        if (npc) {
+          const iso = cartesianToIsometric(npc.tileX, npc.tileY);
+          this.showDamageNumber(iso.x, iso.y - 40, damage, true);
+        }
+      }
+    });
+
+    // Combat: NPC death — drops + cleanup
+    gameState.on('npcDeath', (data: unknown) => {
+      const { npcId, drops } = data as { npcId: string; drops: { itemId: string; quantity: number }[] };
+      const npc = this.combatNpcs.find((n) => n.combatId === npcId);
+      if (!npc) return;
+
+      npc.die();
+
+      // Spawn ground loot
+      if (drops.length > 0) {
+        this.spawnGroundLoot(npc.tileX, npc.tileY, drops);
+      }
+
+      // Remove after delay
+      this.time.delayedCall(2000, () => {
+        npc.destroy();
+        this.combatNpcs = this.combatNpcs.filter((n) => n !== npc);
+      });
+    });
+
+    // Combat: player respawn
+    gameState.on('playerRespawn', (data: unknown) => {
+      const { x, y } = data as { x: number; y: number };
+      this.player.teleportToTile(x, y);
     });
 
     // Spawn fire visual when firemaking completes
@@ -588,5 +704,94 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.activeFires.push({ tileX, tileY, sprite, timer });
+  }
+
+  private showDamageNumber(x: number, y: number, damage: number, isPlayerDealing: boolean) {
+    const color = damage === 0 ? '#ffffff' : isPlayerDealing ? '#ef4444' : '#22c55e';
+    const text = this.add.text(x + (Math.random() - 0.5) * 20, y - Math.random() * 10, damage === 0 ? '0' : String(damage), {
+      fontSize: damage === 0 ? '14px' : '18px',
+      color,
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 3,
+    });
+    text.setOrigin(0.5);
+    text.setDepth(99999);
+
+    this.tweens.add({
+      targets: text,
+      y: text.y - 30,
+      alpha: 0,
+      duration: 1000,
+      onComplete: () => text.destroy(),
+    });
+  }
+
+  private spawnGroundLoot(tileX: number, tileY: number, drops: { itemId: string; quantity: number }[]) {
+    const iso = cartesianToIsometric(tileX, tileY);
+
+    // Show item names in chat
+    const itemNames = drops.map((d) => {
+      const template = getItem(d.itemId);
+      return template ? `${d.quantity}x ${template.name}` : d.itemId;
+    });
+    gameState.addChatMessage('System', `Drops: ${itemNames.join(', ')}`);
+
+    // Create ground loot sprite (gold pouch)
+    const lootGraphics = this.make.graphics({ x: 0, y: 0 });
+    lootGraphics.fillStyle(0xffcc00, 1);
+    lootGraphics.fillCircle(12, 12, 10);
+    lootGraphics.fillStyle(0xfbbf24, 1);
+    lootGraphics.fillCircle(12, 10, 6);
+    const lootKey = `loot_${tileX}_${tileY}_${Date.now()}`;
+    lootGraphics.generateTexture(lootKey, 24, 24);
+    lootGraphics.destroy();
+
+    const sprite = this.add.image(iso.x, iso.y - 20, lootKey);
+    sprite.setDepth(getDepth(tileX, tileY, 5000));
+    sprite.setInteractive();
+
+    sprite.on('pointerover', () => {
+      this.input.setDefaultCursor('pointer');
+      sprite.setTint(0xffcc00);
+    });
+
+    sprite.on('pointerout', () => {
+      this.input.setDefaultCursor('default');
+      sprite.clearTint();
+    });
+
+    sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.button !== 0) return;
+      // Walk to loot
+      this.player.moveToTile(tileX, tileY);
+      gameState.setPlayerPosition(tileX, tileY);
+
+      this.showTargetIndicator(tileX, tileY);
+
+      this.time.delayedCall(600, () => {
+        // Pick up all drops
+        for (const drop of drops) {
+          inventoryManager.addItem(drop.itemId, drop.quantity);
+        }
+        gameState.addChatMessage('System', `You pick up the loot.`);
+        sprite.destroy();
+        if (sprite.texture.key) {
+          this.textures.remove(sprite.texture.key);
+        }
+        this.groundLoot = this.groundLoot.filter((l) => l.sprite !== sprite);
+      });
+    });
+
+    // 2 minute despawn
+    const timer = this.time.delayedCall(120000, () => {
+      sprite.destroy();
+      if (sprite.texture.key) {
+        this.textures.remove(sprite.texture.key);
+      }
+      this.groundLoot = this.groundLoot.filter((l) => l.sprite !== sprite);
+    });
+
+    this.groundLoot.push({ sprite, drops, tileX, tileY, timer });
   }
 }

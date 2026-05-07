@@ -47,6 +47,21 @@ export class Player extends Phaser.GameObjects.Container {
     this.isMoving = true;
   }
 
+  stopMovement() {
+    this.isMoving = false;
+  }
+
+  teleportToTile(tileX: number, tileY: number) {
+    const iso = cartesianToIsometric(tileX, tileY);
+    this.x = iso.x;
+    this.y = iso.y;
+    this.currentTileX = tileX;
+    this.currentTileY = tileY;
+    this.targetTileX = tileX;
+    this.targetTileY = tileY;
+    this.isMoving = false;
+  }
+
   update(_time: number, _delta: number) {
     if (this.isMoving) {
       const targetIso = cartesianToIsometric(this.targetTileX, this.targetTileY);
