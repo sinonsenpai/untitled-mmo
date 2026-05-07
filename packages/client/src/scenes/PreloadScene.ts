@@ -46,6 +46,8 @@ export class PreloadScene extends Phaser.Scene {
     makeDiamond(0x4ade80, 0x22c55e, 'grass');
     makeDiamond(0xd97706, 0xb45309, 'dirt');
     makeDiamond(0x3b82f6, 0x1d4ed8, 'water');
+    makeDiamond(0x2f7d32, 0x1f5b24, 'wild_grass');
+    makeDiamond(0x6b7280, 0x374151, 'stone_floor');
   }
 
   private generateObjectTextures() {
@@ -118,6 +120,28 @@ export class PreloadScene extends Phaser.Scene {
     chestGraphics.fillRect(14, 12, 4, 4);
     chestGraphics.generateTexture('bank_chest', 32, 28);
     chestGraphics.destroy();
+
+    // Cave entrance
+    const caveGraphics = this.make.graphics({ x: 0, y: 0 });
+    caveGraphics.fillStyle(0x374151, 1);
+    caveGraphics.fillCircle(16, 20, 12);
+    caveGraphics.fillStyle(0x111827, 1);
+    caveGraphics.fillCircle(16, 20, 7);
+    caveGraphics.fillStyle(0x9ca3af, 1);
+    caveGraphics.fillRect(10, 12, 12, 4);
+    caveGraphics.generateTexture('cave_entrance', 32, 32);
+    caveGraphics.destroy();
+
+    // Stone staircase
+    const stairsGraphics = this.make.graphics({ x: 0, y: 0 });
+    stairsGraphics.fillStyle(0x4b5563, 1);
+    stairsGraphics.fillRect(6, 14, 20, 14);
+    stairsGraphics.fillStyle(0x9ca3af, 1);
+    stairsGraphics.fillRect(8, 16, 16, 3);
+    stairsGraphics.fillRect(10, 20, 12, 3);
+    stairsGraphics.fillRect(12, 24, 8, 3);
+    stairsGraphics.generateTexture('dungeon_stairs', 32, 32);
+    stairsGraphics.destroy();
 
     // Campfire
     const fireGraphics = this.make.graphics({ x: 0, y: 0 });
