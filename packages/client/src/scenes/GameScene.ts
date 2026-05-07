@@ -17,32 +17,78 @@ import { gameNotifications } from '../ui/GameNotifications.js';
 import { getItem } from '@rpg/shared';
 import { MAP_WIDTH, MAP_HEIGHT } from '@rpg/shared';
 
-// Simple 20x20 map data (0=grass, 1=dirt, 2=water)
-const TILE_MAP = [
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,1,1,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-];
+type TileId = 0 | 1 | 2 | 3 | 4;
+type WorldObjectType =
+  | 'tree'
+  | 'rock'
+  | 'house'
+  | 'bank_chest'
+  | 'anvil'
+  | 'fletching_table'
+  | 'cave_entrance'
+  | 'dungeon_stairs';
 
-// Objects: { type: 'tree'|'rock'|'house', x, y }
-const OBJECTS = [
+interface WorldObject {
+  type: WorldObjectType;
+  x: number;
+  y: number;
+}
+
+function generateTileMap(): TileId[][] {
+  const map: TileId[][] = Array.from({ length: MAP_HEIGHT }, (_, y) =>
+    Array.from({ length: MAP_WIDTH }, (_, x) => {
+      if (y >= 20) return 4;
+      if (y < 7) return 3;
+      if (y >= 7 && y < 20) return 0;
+      return 0;
+    })
+  );
+
+  for (let y = 7; y < 20; y++) {
+    for (let x = 8; x <= 15; x++) {
+      if (y === 10 || y === 11) {
+        map[y][x] = 1;
+      }
+    }
+  }
+
+  const waterPatches: Array<[number, number]> = [
+    [11, 4],
+    [12, 4],
+    [11, 5],
+    [12, 5],
+    [13, 5],
+    [12, 6],
+    [13, 6],
+  ];
+  for (const [x, y] of waterPatches) {
+    map[y][x] = 2;
+  }
+
+  const dirtPatches: Array<[number, number]> = [
+    [3, 1], [4, 1], [5, 1], [6, 1],
+    [4, 2], [5, 2], [6, 2],
+    [16, 2], [17, 2], [18, 2],
+    [15, 3], [16, 3], [17, 3],
+    [10, 9], [11, 9], [12, 9],
+    [10, 12], [11, 12], [12, 12],
+    [13, 13], [14, 13],
+    [6, 21], [7, 21], [8, 21],
+    [15, 23], [16, 23], [17, 23],
+  ];
+  for (const [x, y] of dirtPatches) {
+    if (map[y]?.[x] !== undefined && y < 20) {
+      map[y][x] = 1;
+    } else if (map[y]?.[x] !== undefined && y >= 20) {
+      map[y][x] = 4;
+    }
+  }
+
+  return map;
+}
+
+// Objects: { type, x, y }
+const OBJECTS: WorldObject[] = [
   // Trees
   { type: 'tree', x: 2, y: 2 },
   { type: 'tree', x: 4, y: 3 },
@@ -62,6 +108,10 @@ const OBJECTS = [
   { type: 'tree', x: 16, y: 10 },
   { type: 'tree', x: 18, y: 8 },
   { type: 'tree', x: 12, y: 12 },
+  { type: 'tree', x: 1, y: 1 },
+  { type: 'tree', x: 20, y: 3 },
+  { type: 'tree', x: 22, y: 5 },
+  { type: 'tree', x: 21, y: 1 },
   // Rocks
   { type: 'rock', x: 5, y: 4 },
   { type: 'rock', x: 7, y: 3 },
@@ -71,6 +121,12 @@ const OBJECTS = [
   { type: 'rock', x: 8, y: 10 },
   { type: 'rock', x: 10, y: 8 },
   { type: 'rock', x: 12, y: 6 },
+  { type: 'rock', x: 18, y: 1 },
+  { type: 'rock', x: 19, y: 2 },
+  { type: 'rock', x: 20, y: 1 },
+  { type: 'rock', x: 4, y: 22 },
+  { type: 'rock', x: 10, y: 24 },
+  { type: 'rock', x: 17, y: 26 },
   // House
   { type: 'house', x: 10, y: 10 },
   // Bank chest
@@ -78,13 +134,25 @@ const OBJECTS = [
   // Crafting stations
   { type: 'anvil', x: 8, y: 8 },
   { type: 'fletching_table', x: 12, y: 8 },
+  // Area transitions
+  { type: 'cave_entrance', x: 16, y: 12 },
+  { type: 'dungeon_stairs', x: 12, y: 24 },
 ];
 
 const TILE_TEXTURES: Record<number, string> = {
   0: 'grass',
   1: 'dirt',
   2: 'water',
+  3: 'wild_grass',
+  4: 'stone_floor',
 };
+
+const CRAFTING_STATIONS: Record<'smithing' | 'fletching', { x: number; y: number }> = {
+  smithing: { x: 8, y: 8 },
+  fletching: { x: 12, y: 8 },
+};
+
+const TILE_MAP = generateTileMap();
 
 interface GatherableSprite extends Phaser.GameObjects.Image {
   gatherId?: string;
@@ -110,6 +178,7 @@ export class GameScene extends Phaser.Scene {
   private activeFires: { tileX: number; tileY: number; sprite: Phaser.GameObjects.Image; timer: Phaser.Time.TimerEvent }[] = [];
   private combatNpcs: NPC[] = [];
   private groundLoot: { sprite: Phaser.GameObjects.Image; drops: { itemId: string; quantity: number }[]; tileX: number; tileY: number; timer: Phaser.Time.TimerEvent }[] = [];
+  private currentArea: 'surface' | 'dungeon' = 'surface';
 
   constructor() {
     super({ key: 'GameScene' });
@@ -169,6 +238,23 @@ export class GameScene extends Phaser.Scene {
         common: [{ itemId: 'raw_rat_meat', quantity: 1 }],
       },
     });
+    combatManager.registerProfile('wolf', {
+      hp: 14, maxHp: 14, attack: 5, strength: 6, defence: 3,
+      aggression: 'aggressive', attackRange: 1,
+      dropTable: {
+        always: [{ itemId: 'bones', quantity: 1 }],
+        common: [{ itemId: 'raw_beef', quantity: 1 }],
+      },
+    });
+    combatManager.registerProfile('skeleton', {
+      hp: 18, maxHp: 18, attack: 7, strength: 7, defence: 5,
+      aggression: 'aggressive', attackRange: 1,
+      dropTable: {
+        always: [{ itemId: 'bones', quantity: 2 }],
+        common: [{ itemId: 'coins', quantity: 10 }],
+        uncommon: [{ itemId: 'bronze_dagger', quantity: 1 }],
+      },
+    });
 
     // Spawn combat NPCs
     const combatSpawns = [
@@ -179,6 +265,10 @@ export class GameScene extends Phaser.Scene {
       { id: 'goblin2', type: 'goblin', x: 17, y: 2 },
       { id: 'rat1', type: 'giant_rat', x: 8, y: 14 },
       { id: 'rat2', type: 'giant_rat', x: 9, y: 15 },
+      { id: 'wolf1', type: 'wolf', x: 2, y: 2 },
+      { id: 'wolf2', type: 'wolf', x: 21, y: 4 },
+      { id: 'skeleton1', type: 'skeleton', x: 7, y: 23 },
+      { id: 'skeleton2', type: 'skeleton', x: 15, y: 25 },
     ];
 
     for (const spawn of combatSpawns) {
@@ -190,7 +280,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Camera setup
-    this.cameras.main.setBounds(-800, -400, 1600, 1200);
+    this.cameras.main.setBounds(-1280, -800, 3200, 2200);
     this.cameras.main.setZoom(1.2);
 
     // Prevent browser from handling these keys
@@ -401,6 +491,7 @@ export class GameScene extends Phaser.Scene {
 
   update(time: number, delta: number) {
     this.player.update(time, delta);
+    this.enforceCraftingStationRange();
 
     // Aggressive NPC auto-initiation (1-tile aggression radius)
     if (!combatManager.isInCombat() && !combatManager.playerIsDead()) {
@@ -442,6 +533,26 @@ export class GameScene extends Phaser.Scene {
       const targetY = this.player.y - this.cameras.main.height / 2 / this.cameras.main.zoom;
       this.cameras.main.scrollX += (targetX - this.cameras.main.scrollX) * 0.05;
       this.cameras.main.scrollY += (targetY - this.cameras.main.scrollY) * 0.05;
+    }
+  }
+
+  private enforceCraftingStationRange() {
+    if (!craftingManager.isCurrentlyCrafting()) return;
+
+    const skillType = craftingManager.getCurrentSkillType();
+    if (!skillType) return;
+
+    const station = CRAFTING_STATIONS[skillType];
+    if (!station) return;
+
+    const playerTile = this.player.getTilePosition();
+    const dx = Math.abs(playerTile.x - station.x);
+    const dy = Math.abs(playerTile.y - station.y);
+    const withinRange = dx <= 1 && dy <= 1;
+
+    if (!withinRange) {
+      craftingManager.stopCrafting();
+      gameState.addChatMessage('System', `You stop crafting because you moved away from the ${skillType === 'smithing' ? 'anvil' : 'fletching table'}.`);
     }
   }
 
@@ -544,6 +655,48 @@ export class GameScene extends Phaser.Scene {
             craftingManager.openCrafting(skillType);
           });
         });
+      } else if (obj.type === 'cave_entrance') {
+        const sprite = this.add.image(iso.x, iso.y - 16, 'cave_entrance');
+        sprite.setDepth(getDepth(obj.x, obj.y, 1000));
+        sprite.setOrigin(0.5, 1);
+
+        sprite.setInteractive();
+
+        sprite.on('pointerover', () => {
+          this.input.setDefaultCursor('pointer');
+          sprite.setTint(0xcccccc);
+        });
+
+        sprite.on('pointerout', () => {
+          this.input.setDefaultCursor('default');
+          sprite.clearTint();
+        });
+
+        sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+          if (pointer.button !== 0) return;
+          this.enterDungeon();
+        });
+      } else if (obj.type === 'dungeon_stairs') {
+        const sprite = this.add.image(iso.x, iso.y - 16, 'dungeon_stairs');
+        sprite.setDepth(getDepth(obj.x, obj.y, 1000));
+        sprite.setOrigin(0.5, 1);
+
+        sprite.setInteractive();
+
+        sprite.on('pointerover', () => {
+          this.input.setDefaultCursor('pointer');
+          sprite.setTint(0xcccccc);
+        });
+
+        sprite.on('pointerout', () => {
+          this.input.setDefaultCursor('default');
+          sprite.clearTint();
+        });
+
+        sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+          if (pointer.button !== 0) return;
+          this.exitDungeon();
+        });
       } else if (obj.type === 'bank_chest') {
         const sprite = this.add.image(iso.x, iso.y - 16, 'bank_chest');
         sprite.setDepth(getDepth(obj.x, obj.y, 1000));
@@ -627,6 +780,24 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private enterDungeon() {
+    this.dismissDialogue();
+    this.currentArea = 'dungeon';
+    this.player.teleportToTile(12, 24);
+    gameState.setPlayerPosition(12, 24);
+    gameState.addChatMessage('System', 'You descend into the dungeon.');
+    this.showTargetIndicator(12, 24);
+  }
+
+  private exitDungeon() {
+    this.dismissDialogue();
+    this.currentArea = 'surface';
+    this.player.teleportToTile(16, 13);
+    gameState.setPlayerPosition(16, 13);
+    gameState.addChatMessage('System', 'You climb back to the surface.');
+    this.showTargetIndicator(16, 13);
+  }
+
   private onGatherComplete(gatherId: string) {
     // Update sprite appearance if depleted
     const obj = gatheringManager.getObjects().find(o => `${o.type}_${o.x}_${o.y}` === gatherId);
@@ -669,21 +840,85 @@ export class GameScene extends Phaser.Scene {
       text-align: center;
     `;
 
-    div.innerHTML = `
-      <div style="margin-bottom:8px;color:#8af;">${npc.npcName} says:</div>
-      <div style="margin-bottom:10px;">"Welcome! Click trees to chop wood, rocks to mine ore. Use F1-F6 for panels."</div>
-      <button style="
-        background:#3a3a4a;
-        border:1px solid #5a5a6a;
-        border-radius:3px;
-        color:#fff;
-        padding:4px 16px;
-        cursor:pointer;
-        font-size:12px;
-      ">Continue</button>
-    `;
+    if (npc.npcName === 'Guide') {
+      const availableQuests = questManager
+        .getStartableQuests()
+        .filter((quest) => quest.id !== 'tutorial');
+      const activeQuests = questManager
+        .getAllQuests()
+        .filter((quest) => quest.state === 'in_progress');
 
-    div.querySelector('button')!.onclick = () => this.dismissDialogue();
+      const availableHtml = availableQuests.length > 0
+        ? availableQuests.map((quest) => `
+          <div style="margin-bottom:8px;padding:8px;border:1px solid #505068;border-radius:4px;background:rgba(20,20,28,0.6);text-align:left;">
+            <div style="color:#fff;font-weight:600;margin-bottom:4px;">${quest.name}</div>
+            <div style="color:#bfc6d8;font-size:11px;margin-bottom:6px;">${quest.description}</div>
+            <button data-quest-id="${quest.id}" style="
+              background:#3d6f4a;
+              border:1px solid #69a77b;
+              border-radius:3px;
+              color:#fff;
+              padding:4px 10px;
+              cursor:pointer;
+              font-size:11px;
+            ">Accept</button>
+          </div>
+        `).join('')
+        : '<div style="font-size:11px;color:#bbb;margin-bottom:8px;">No new quests right now. Keep training and check back.</div>';
+
+      const activeHtml = activeQuests.length > 0
+        ? `<div style="font-size:11px;color:#ccc;margin-bottom:10px;text-align:left;">
+          <div style="color:#9cc4ff;margin-bottom:4px;">Current quests:</div>
+          ${activeQuests.map((quest) => `- ${quest.name}`).join('<br>')}
+        </div>`
+        : '';
+
+      div.innerHTML = `
+        <div style="margin-bottom:8px;color:#8af;">${npc.npcName} says:</div>
+        <div style="margin-bottom:10px;">"Need work? I can set you up with tasks."</div>
+        ${activeHtml}
+        <div style="margin-bottom:8px;color:#d6d6e6;font-size:12px;">Available quests</div>
+        ${availableHtml}
+        <button data-close-dialogue="1" style="
+          background:#3a3a4a;
+          border:1px solid #5a5a6a;
+          border-radius:3px;
+          color:#fff;
+          padding:4px 16px;
+          cursor:pointer;
+          font-size:12px;
+        ">Close</button>
+      `;
+
+      div.querySelectorAll('button[data-quest-id]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const questId = button.getAttribute('data-quest-id');
+          if (!questId) return;
+          const started = questManager.startQuest(questId);
+          if (started) {
+            this.dismissDialogue();
+            this.showDialogue(npc);
+          }
+        });
+      });
+      div.querySelector('button[data-close-dialogue="1"]')?.addEventListener('click', () => this.dismissDialogue());
+    } else {
+      div.innerHTML = `
+        <div style="margin-bottom:8px;color:#8af;">${npc.npcName} says:</div>
+        <div style="margin-bottom:10px;">"Welcome! Click trees to chop wood, rocks to mine ore. Use F1-F6 for panels."</div>
+        <button data-close-dialogue="1" style="
+          background:#3a3a4a;
+          border:1px solid #5a5a6a;
+          border-radius:3px;
+          color:#fff;
+          padding:4px 16px;
+          cursor:pointer;
+          font-size:12px;
+        ">Continue</button>
+      `;
+      div.querySelector('button[data-close-dialogue="1"]')?.addEventListener('click', () => this.dismissDialogue());
+    }
+
     document.body.appendChild(div);
     this.activeDialogue = div;
   }
