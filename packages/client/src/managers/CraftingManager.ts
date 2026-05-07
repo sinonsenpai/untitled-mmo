@@ -5,6 +5,7 @@ import {
   getMaxCraftableCount,
   removeItemFromInventory,
   addItemToInventory,
+  canAddItemToInventory,
   getItem,
   type Recipe,
 } from '@rpg/shared';
@@ -12,6 +13,7 @@ import { gameState } from './GameStateManager.js';
 import { inventoryManager } from './InventoryManager.js';
 import { skillManager } from './SkillManager.js';
 import { uiManager } from './UIManager.js';
+import { questManager } from './QuestManager.js';
 
 export class CraftingManager {
   private isCrafting: boolean = false;
@@ -94,22 +96,32 @@ export class CraftingManager {
     }
 
     const player = gameState.getState().player;
+    const outputItem = getItem(recipe.output.itemId);
+    if (!outputItem) return;
 
+    const output = {
+      ...outputItem,
+      quantity: recipe.output.quantity,
+    };
+
+    let inventoryAfterIngredients = player.inventory;
     for (const ing of recipe.ingredients) {
-      player.inventory = removeItemFromInventory(
-        player.inventory,
+      inventoryAfterIngredients = removeItemFromInventory(
+        inventoryAfterIngredients,
         ing.itemId,
         ing.quantity
       );
     }
 
-    const outputItem = getItem(recipe.output.itemId);
-    if (outputItem) {
-      player.inventory = addItemToInventory(player.inventory, {
-        ...outputItem,
-        quantity: recipe.output.quantity,
-      });
+    if (!canAddItemToInventory(inventoryAfterIngredients, output)) {
+      gameState.addChatMessage('System', `You don't have enough inventory space to craft ${recipe.name.toLowerCase()}.`);
+      this.isCrafting = false;
+      this.craftProgress = 0;
+      this.currentRecipe = null;
+      return;
     }
+
+    player.inventory = addItemToInventory(inventoryAfterIngredients, output);
 
     skillManager.addXp(recipe.skill, recipe.xp);
     gameState['emit']('inventory', player.inventory);
@@ -120,6 +132,8 @@ export class CraftingManager {
         recipe.skill.charAt(0).toUpperCase() + recipe.skill.slice(1)
       } XP)`
     );
+
+    questManager.recordProgress(recipe.output.itemId, recipe.output.quantity);
 
     this.isCrafting = false;
     this.craftProgress = 0;

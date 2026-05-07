@@ -75,10 +75,17 @@ export interface NPCData {
 }
 
 export interface QuestObjective {
-  type: 'kill' | 'gather' | 'talk' | 'skill';
+  type: 'kill' | 'gather' | 'talk' | 'skill' | 'craft';
   target: string;
   amount: number;
   current: number;
+}
+
+export interface QuestRewards {
+  xp?: Record<string, number>;
+  items?: Item[];
+  gold?: number;
+  unlockAreas?: string[];
 }
 
 export interface Quest {
@@ -87,10 +94,8 @@ export interface Quest {
   description: string;
   state: 'not_started' | 'in_progress' | 'completed';
   objectives: QuestObjective[];
-  rewards: {
-    xp?: Record<string, number>;
-    items?: Item[];
-  };
+  rewards: QuestRewards;
+  prerequisites: string[];
 }
 
 export interface GameState {
