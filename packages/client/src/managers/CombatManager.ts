@@ -70,10 +70,11 @@ export class CombatManager {
     const target = this.currentTarget;
     const player = gameState.getState().player;
 
-    // Check distance — stop combat if player walks more than 5 tiles away
+    // Check distance — stop combat if player walks too far away
     const dx = Math.abs(target.npcTileX - player.position.x);
     const dy = Math.abs(target.npcTileY - player.position.y);
-    if (dx > 3 || dy > 3) {
+    const fleeRange = target.stats.attackRange + 2;
+    if (dx > fleeRange || dy > fleeRange) {
       gameState.addChatMessage('System', 'You flee from combat.');
       this.stopCombat();
       return;

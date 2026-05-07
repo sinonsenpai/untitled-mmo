@@ -1,8 +1,8 @@
 # RuneScape-esk Game — Development Roadmap
 
 > Created: 2026-05-05
-> Current Phase: Phase 1 — Crafting System
-> Status: In Progress
+> Current Phase: Phase 4 — Quests & Content
+> Status: Phases 1-3 Complete
 
 ---
 
@@ -52,7 +52,7 @@ packages/
 ### Core Systems
 - [x] Inventory — 28 slots, item stacking
 - [x] Equipment — 11 slots (head, cape, amulet, weapon, body, shield, legs, hands, feet, ring, ammo)
-- [x] Skills — 7 skills: HP, Attack, Strength, Defence, Woodcutting, Mining, Smithing
+- [x] Skills — 9 skills: HP, Attack, Strength, Defence, Woodcutting, Mining, Smithing, Fletching, Firemaking
 - [x] Quests — objective tracking, states (not_started/in_progress/completed)
 - [x] Chat — scrollable message history with input
 
@@ -64,11 +64,14 @@ packages/
 - [x] F5 — Chat panel
 - [x] All panels draggable and toggleable
 
+### Bonus (not in original roadmap)
+- [x] Firemaking — light logs with tinderbox, campfire visuals with flicker/fade tweens, 30s auto-extinguish, Fletching skill
+
 ---
 
-## Phase 1: Crafting System (CURRENT)
+## Phase 1: Crafting System (COMPLETE)
 
-### 1.1 Expand Item Database
+### 1.1 Expand Item Database [x]
 **File:** `packages/shared/src/entities/Item.ts`
 
 Add new items:
@@ -96,7 +99,7 @@ Add new items:
 - `stats` property for combat bonuses (attackBonus, strengthBonus, defenceBonus)
 - Proper equip slots
 
-### 1.2 Recipe System
+### 1.2 Recipe System [x]
 **New file:** `packages/shared/src/systems/CraftingSystem.ts`
 
 ```typescript
@@ -134,7 +137,7 @@ interface Recipe {
 - `craft(recipe, inventory, skills)` — consumes mats, gives product, adds XP
 - `getRecipesForSkill(skill)` — returns all recipes for a skill
 
-### 1.3 Crafting Manager
+### 1.3 Crafting Manager [x]
 **New file:** `packages/client/src/managers/CraftingManager.ts`
 
 ```typescript
@@ -147,7 +150,7 @@ class CraftingManager {
 }
 ```
 
-### 1.4 Crafting UI Panel
+### 1.4 Crafting UI Panel [x]
 **New file:** `packages/client/src/ui/CraftingPanel.ts`
 
 - **Toggle:** F6 key
@@ -166,7 +169,7 @@ class CraftingManager {
 - **Progress bar:** 2-3 seconds per craft (like gathering)
 - **Auto-scroll:** Chat message on success/failure
 
-### 1.5 Crafting Stations on Map
+### 1.5 Crafting Stations on Map [x]
 **File:** `packages/client/src/scenes/GameScene.ts`
 
 - **Anvil** at position (8, 8)
@@ -181,7 +184,7 @@ class CraftingManager {
 - Simple placeholder anvil (gray rectangle + stand)
 - Simple fletching table (brown rectangle + tools)
 
-### 1.6 Starter Materials
+### 1.6 Starter Materials [x]
 **File:** `packages/client/src/scenes/GameScene.ts` (create method)
 
 Give player starter materials for testing:
@@ -193,9 +196,9 @@ Give player starter materials for testing:
 
 ---
 
-## Phase 2: Bank & Shop System
+## Phase 2: Bank & Shop System (COMPLETE)
 
-### 2.1 Bank System
+### 2.1 Bank System [x]
 
 **Expand PlayerData** (`packages/shared/src/types/index.ts`):
 ```typescript
@@ -234,7 +237,7 @@ class BankManager {
 - Interactive sprite
 - Click to open bank panel
 
-### 2.2 Shop System
+### 2.2 Shop System [x]
 
 **Expand NPCData** (`packages/shared/src/types/index.ts`):
 ```typescript
@@ -287,14 +290,14 @@ class ShopManager {
 | Bowstring | 20 | 10 | -1 |
 | Tin ore | 50 | 25 | -1 |
 
-### 2.3 Starter Gold
+### 2.3 Starter Gold [x]
 Give player 500 gold to start.
 
 ---
 
-## Phase 3: Combat System (Click-and-Wait)
+## Phase 3: Combat System (Click-and-Wait) — COMPLETE
 
-### 3.1 Combat Stats on Items
+### 3.1 Combat Stats on Items [x]
 
 **Expand Item type** (`packages/shared/src/types/index.ts`):
 ```typescript
@@ -313,7 +316,7 @@ interface Item {
 
 Update ITEM_DATABASE with stats for all weapons and armor.
 
-### 3.2 Combat Manager
+### 3.2 Combat Manager [x]
 **New file:** `packages/client/src/managers/CombatManager.ts`
 
 **Combat mechanics (Old School RuneScape style):**
@@ -338,7 +341,7 @@ damage = random(0, maxHit) if hitChance > random(0,1) else 0
 4. Show floating damage numbers
 5. Enemy dies at 0 HP → drops loot → gives combat XP
 
-### 3.3 NPC Combat Data
+### 3.3 NPC Combat Data [x]
 
 **New type:** `CombatNPCData` extends `NPCData`:
 ```typescript
@@ -375,7 +378,7 @@ interface Drop {
 | Giant rat | 3 | 5 | 2 | 2 | 1 | Aggressive (3 tiles) | Bones, raw rat meat |
 | Goblin | 5 | 12 | 3 | 3 | 2 | Aggressive (3 tiles) | Bones, coins (5-15), bronze helm |
 
-### 3.4 Combat UI
+### 3.4 Combat UI [x]
 
 **Floating damage numbers** (`GameScene.ts`):
 - Red numbers: damage dealt TO enemy
@@ -393,13 +396,13 @@ interface Drop {
 - Shows current weapon stats
 - Toggle attack style buttons
 
-### 3.5 Death System
+### 3.5 Death System [x]
 - **Keep all items** (safe death for now)
 - Respawn at starting position (10, 10)
 - Lose 10% of each skill's current XP (not levels)
 - Chat message: "Oh dear, you are dead!"
 
-### 3.6 Loot System
+### 3.6 Loot System [x]
 
 **Drop tables:**
 ```typescript
@@ -546,20 +549,16 @@ See `ATTRIBUTION.md` for full credits on placeholder art assets.
 
 ## Next Steps
 
-1. Execute **Phase 1: Crafting System**
-   - Step 1.1: Expand item database
-   - Step 1.2: Create recipe system
-   - Step 1.3: Create CraftingManager
-   - Step 1.4: Create CraftingPanel UI
-   - Step 1.5: Add anvil + fletching table to map
-   - Step 1.6: Test and verify
+1. Move to **Phase 4: Quests & Content Expansion**
+   - Create 3 new quests (The Bronze Age, A Fletching We Will Go, Pest Control)
+   - Implement quest rewards and prerequisites
+   - Add wilderness and dungeon areas
+   - Add random events
 
-2. Move to **Phase 2: Bank & Shop**
+2. Move to **Phase 5: Multiplayer (Colyseus)**
 
-3. Move to **Phase 3: Combat**
-
-4. Continue to **Phases 4-5** as time allows
+3. **Minor bug:** `SKILL_NAMES` in `GameConstants.ts` is missing `fletching` and `firemaking`
 
 ---
 
-*Last updated: 2026-05-05*
+*Last updated: 2026-05-07*

@@ -395,6 +395,20 @@ export class GameScene extends Phaser.Scene {
   update(time: number, delta: number) {
     this.player.update(time, delta);
 
+    // Aggressive NPC auto-initiation (1-tile aggression radius)
+    if (!combatManager.isInCombat() && !combatManager.playerIsDead()) {
+      const playerPos = gameState.getState().player.position;
+      for (const npc of this.combatNpcs) {
+        if (npc.isDead || !npc.combatStats || npc.combatStats.aggression !== 'aggressive') continue;
+        const dx = Math.abs(npc.tileX - Math.round(playerPos.x));
+        const dy = Math.abs(npc.tileY - Math.round(playerPos.y));
+        if (dx <= 1 && dy <= 1 && npc.combatId) {
+          combatManager.startCombat(npc.combatId, npc.npcName.replace(/ *\(Lvl \d+\)/, ''), npc.tileX, npc.tileY);
+          break;
+        }
+      }
+    }
+
     // Update progress bar
     if (gatheringManager.isCurrentlyGathering()) {
       this.progressBar.setVisible(true);
@@ -781,6 +795,26 @@ export class GameScene extends Phaser.Scene {
       this.showTargetIndicator(tileX, tileY);
 
       this.time.delayedCall(600, () => {
+        // Check if inventory can hold the loot
+        const inventory = gameState.getState().player.inventory;
+        const freeSlots = 28 - inventory.length;
+        let slotsNeeded = 0;
+        for (const drop of drops) {
+          const existing = inventory.find(
+            (i) => i.id === drop.itemId && i.quantity < i.maxStack
+          );
+          if (existing) {
+            const canStack = existing.quantity + drop.quantity <= existing.maxStack;
+            if (!canStack) slotsNeeded++;
+          } else {
+            slotsNeeded++;
+          }
+        }
+        if (slotsNeeded > freeSlots) {
+          gameState.addChatMessage('System', `You can't carry any more items!`);
+          return;
+        }
+
         // Pick up all drops
         for (const drop of drops) {
           inventoryManager.addItem(drop.itemId, drop.quantity);
