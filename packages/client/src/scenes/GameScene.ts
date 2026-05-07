@@ -344,6 +344,13 @@ export class GameScene extends Phaser.Scene {
         if (npc) {
           const iso = cartesianToIsometric(npc.tileX, npc.tileY);
           this.showDamageNumber(iso.x, iso.y - 40, damage, true);
+          if (npc.combatStats) {
+            const currentTarget = combatManager.getCurrentTarget();
+            if (currentTarget) {
+              npc.combatStats.hp = currentTarget.stats.hp;
+              npc.updateHealthBar();
+            }
+          }
         }
       }
     });
@@ -372,6 +379,10 @@ export class GameScene extends Phaser.Scene {
     gameState.on('playerRespawn', (data: unknown) => {
       const { x, y } = data as { x: number; y: number };
       this.player.teleportToTile(x, y);
+    });
+
+    gameState.on('playerHp', () => {
+      this.player.updatePlayerHealthBar();
     });
 
     // Spawn fire visual when firemaking completes

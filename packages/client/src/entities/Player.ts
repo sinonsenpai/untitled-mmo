@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { cartesianToIsometric, isometricToCartesian, getDepth } from '../utils/Isometric.js';
+import { gameState } from '../managers/GameStateManager.js';
 
 export class Player extends Phaser.GameObjects.Container {
   private targetTileX: number;
@@ -8,6 +9,8 @@ export class Player extends Phaser.GameObjects.Container {
   private speed: number = 3;
   private currentTileX: number;
   private currentTileY: number;
+  private healthBar: Phaser.GameObjects.Graphics | null = null;
+  private healthBarBg: Phaser.GameObjects.Graphics | null = null;
 
   constructor(scene: Phaser.Scene, tileX: number, tileY: number) {
     const iso = cartesianToIsometric(tileX, tileY);
@@ -36,6 +39,16 @@ export class Player extends Phaser.GameObjects.Container {
     const selectBox = scene.add.rectangle(0, 10, 28, 20);
     selectBox.setStrokeStyle(1, 0xffffff, 0.5);
     this.add(selectBox);
+
+    // Player health bar
+    this.healthBarBg = scene.add.graphics();
+    this.healthBarBg.fillStyle(0x000000, 0.6);
+    this.healthBarBg.fillRect(-16, -44, 32, 4);
+    this.add(this.healthBarBg);
+
+    this.healthBar = scene.add.graphics();
+    this.add(this.healthBar);
+    this.updatePlayerHealthBar();
 
     this.setDepth(getDepth(tileX, tileY, 2000));
     scene.add.existing(this);
@@ -89,5 +102,15 @@ export class Player extends Phaser.GameObjects.Container {
 
   getTilePosition(): { x: number; y: number } {
     return { x: this.currentTileX, y: this.currentTileY };
+  }
+
+  updatePlayerHealthBar() {
+    if (!this.healthBar) return;
+    const player = gameState.getState().player;
+    const pct = player.hp / player.maxHp;
+    this.healthBar.clear();
+    const color = pct > 0.5 ? 0x22c55e : pct > 0.25 ? 0xfbbf24 : 0xef4444;
+    this.healthBar.fillStyle(color, 1);
+    this.healthBar.fillRect(-16, -44, 32 * pct, 4);
   }
 }
